@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 class GameTest {
+	// Create board to manually populate and test against Game object's board
 	private char[][] board; 
 	private static final int NUM_ROWS = 6;
 	private static final int NUM_COLS = 9;
 	private static final int WIN_NUM = 5;
-	public boolean isWon = false;
-	public boolean isOver = false;
-	private boolean playerOneTurn = true;
 	
 	public GameTest(){
 		this.board = new char[NUM_ROWS][NUM_COLS];
