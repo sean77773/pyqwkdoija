@@ -1,6 +1,6 @@
 - Compile Game.java.
 - Compile and run AppServer.java.
-- Compile and run Client.java and follow onscreen instructions.
+- Compile and run Client.java (per player) and follow onscreen instructions
 - All files are part of testserver package
 
 I wrote and tested this using eclipse, and partially tested in CLI.
