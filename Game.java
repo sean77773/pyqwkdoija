@@ -105,6 +105,8 @@ public class Game {
     	this.playerOneTurn = !this.playerOneTurn;
     }
     
+     // Win checking methods are basic, checks whole row/column for 5 in a row of desired piece.
+     // Unnecessary squares checked using this method but board will never be big enough for this to be an issue
     // Checks horizontal plain of dropped piece
 	public boolean checkHorizontal(int row) {
 		char piece = this.checkPiece();
@@ -203,7 +205,7 @@ public class Game {
 	
 
 	
-	
+	// checks for diagonal win, left or right
 	public boolean checkDiagonal(int row, int col) {
 		return this.checkLeftDiagonal(row, col) || this.checkRightDiagonal(row,  col);
 	}
