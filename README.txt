@@ -9,12 +9,16 @@ User Instructions:
 - User input can be "q" (for query) to send GET request, 1-9 to make move(POST(9)), or a String between 2-10 characters long to enter username(POST(username)).
 
 
-Functionality:
-
-- When server starts, it waits for two players to join (player is considered 'joined' when they send POST request with username i.e. not just from GET)
-- Two people can join, when two people connected any other client request is met with a "Game is full." response body.
-- If one person leaves mid-game then the game (not server) automatically restarts and makes room for another client to join
-- When game finishes, another one automatically begins.
+Functionality Overview:
+- Server starts, allows maximum of two clients to join.
+- Client is considered "joined" after they enter their username. IP is logged.
+- If another client tries joining while 2 players joined, they are met with "Game is full." response. As soon as a player leaves, the waiting player will get access and a username prompt
+- When One user leaves while playing, the other user stays in the lobby and doesn't need to re enter their username or password and stays as playerone or playertwo.
+- Joining player becomes whichever player number is free (player 1 or player 2)
+- When the game finishes, another one automatically begins
+- Users can manually send GET request with 'q' however after username entry any input will result in a GET request apart from 1-9 if it is their turn
+- Server is persistent and robust to various scenarios such as disconnects, starting new games
+- Client is the same, as soon as there is space in the game they will join and if launched before server starts, they will automatically join when it goes live
 
 Files -> AppServer.java - this is the application server
       -> Client.java - this is the clientside program
@@ -105,9 +109,20 @@ Thoughts before submitting:
 
 If doing this again I would probably try to implement longpolling or server side events as a cleaner solution to faking server pushes. I would probably use jetty as well to make things easier.
 In AppServer.java, the control flow is a little convoluted when processing requests in the inner PlayerHandler class' handle() method. I would probably refactor this and make it more modular.
-There is also portions of code in some files where there is copy/paste repeated code which probably could be consolidated but this would be refactored if given more time.
+There is also portions of code in some files where there is copy/paste repeated code which probably could be consolidated but this would be refactored if given more time. In the Game class,
+the methods for testing if there is a 5 in a row are a little brute-forcish as they can check unneccesary squares (i.e. cells that couldn't be involved in a win with the last place piece). For example
+when checking if there is a horizontal 5 in a row at the last played piece, the entire row is scanned for a 5 in a row of that piece. This isn't really an issue due to the size of the board but there's 
+definitely more elegant solutions to check for a win. 
 
-Looking forward to getting feedback on this project!
+Please play around with it (try break it) and see how it handles the following cases:
+
+- client launching with no server launched (client gets "Failed to connect to server.") 
+- client launching with no server launched followed by a server launch (you will get "Failed to connect to server." then as soon as the server starts you will get username prompt)
+- various combinations of clients entering username(i.e. joining) and then shutting down the client (i.e. disconnecting) at various stages of the game
+- fill up lobby with 2 players and launch other clients and then have client programs which are playing shut down
+
+
+Looking forward to getting feedback on this! 
 
 Sean
 
