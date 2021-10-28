@@ -6,8 +6,8 @@ public class Game {
 	private static final int NUM_ROWS = 6;
 	private static final int NUM_COLS = 9;
 	private static final int WIN_NUM = 5;
-	public boolean isWon = false;
-	public boolean isOver = false;
+	private boolean isWon = false;
+	private boolean isOver = false;
 	private boolean playerOneTurn = true;
 	
 	// populate board upon initialisation
