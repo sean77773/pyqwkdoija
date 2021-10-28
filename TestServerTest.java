@@ -129,9 +129,10 @@ class TestServerTest {
 		// Add player1 and player2 to the two main hashmaps
 		testServer.addToAddrUsernameMap(playerOneIP, usernameOne);
 		testServer.addToAddrUsernameMap(playerTwoIP, usernameTwo);
-		
 		testServer.addToAddrPlayerMap(playerOneIP, "playerone");
 		testServer.addToAddrPlayerMap(playerTwoIP, "playertwo");
+		testServer.addToAddrWinNotifyMap(playerOneIP, false);
+		testServer.addToAddrWinNotifyMap(playerTwoIP, false);
         // Check we get the "make a move" prompt if it is player who made request's turn
 		HttpRequest request = genGETRequest(playerOneIP, context);
 		HttpResponse<String> response = testClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -249,12 +250,14 @@ class TestServerTest {
 		String context = "http://localhost:7040/handleMove";
 		int row = num_rows -1;
 		HttpClient testClient = HttpClient.newHttpClient();
-		// Add users to 2 main hashmaps
+		// Add users to hashmaps
 		testServer.addToAddrUsernameMap(playerOneIP, usernameOne);
 		testServer.addToAddrUsernameMap(playerTwoIP, usernameTwo);
-		
 		testServer.addToAddrPlayerMap(playerOneIP, "playerone");
 		testServer.addToAddrPlayerMap(playerTwoIP, "playertwo");
+		testServer.addToAddrWinNotifyMap(playerOneIP, false);
+		testServer.addToAddrWinNotifyMap(playerTwoIP, false);
+		
 		// doesn't matter what request body is here (representing what column to add to)
 		// as the value is hardcoded as 8 in the Testserver class
 		// This is because getting access to HttpExchange is tricky and I
@@ -280,7 +283,8 @@ class TestServerTest {
 		testServer = new TestServer(7040);
 		testServer.addToAddrUsernameMap(playerOneIP, usernameOne);
 		testServer.addToAddrUsernameMap(playerTwoIP, usernameTwo);
-		
+		testServer.addToAddrWinNotifyMap(playerOneIP, false);
+		testServer.addToAddrWinNotifyMap(playerTwoIP, false);
 		testServer.addToAddrPlayerMap(playerOneIP, "playerone");
 		testServer.addToAddrPlayerMap(playerTwoIP, "playertwo");
 		// Populate column with 5 x's in a row
@@ -293,7 +297,7 @@ class TestServerTest {
 		    testServer.changeTurns();
 		}
 		
-		// Ensure that all cells in bottom row are empty to asser that a new game ahs started and a new board has been made
+		// Ensure that all cells in bottom row are empty to assert that a new game ahs started and a new board has been made
 		int col = 0;
 		while(col < num_cols) {
 			assertTrue(testServer.getCellValue(row, col) == ' ');
