@@ -16,10 +16,14 @@ public class Client {
     private HashMap<String, Integer> digits = new HashMap<String, Integer>();
     private HttpClient client = HttpClient.newHttpClient();
     private String IP;
+    // switcher to handle connection error messages so "failed to contact server" isn't printed repeatedly while
+    // client waits for server to start
+    private boolean handledConnectFail = false;
     // This is a variable which keeps track of the last changed state
     // the client automatically sends GET requests to server every 40 milliseconds
     // and if any change is made then it is printed to the user
     private String lastState;
+    private static final String CONN_ERROR = "Failed to contact server.";
    
     public Client () {
     	this.digits.put("q", 0);
@@ -42,6 +46,13 @@ public class Client {
 	    Random ip = new Random();
 	    return ip.nextInt(256) + "." + ip.nextInt(256) + "." + ip.nextInt(256) + "." + ip.nextInt(256);
 	}
+	
+	public void connectError() {
+		if(!this.handledConnectFail) {
+            System.out.println(CONN_ERROR);
+            this.handledConnectFail = true;
+		}
+	}
     
 	// Master input handler which uses helper methods to handle user input
 	public void handleInput(String s) throws IOException, InterruptedException{
@@ -62,15 +73,21 @@ public class Client {
     // If input is greater than 1 character client assumes they are trying to enter a username
     // which will be sent as request to server to be processed and responded to with appropriate response.
 	public void enterUsername(String uname) throws IOException, InterruptedException {
+		try {
 		 HttpRequest request = HttpRequest.newBuilder()
 		          .uri(URI.create("http://localhost:8000/"))
 		          .setHeader("X-Forwarded-For", this.IP)
 		          .POST(BodyPublishers.ofString(uname))
 		          .build();
-
+          
 		 HttpResponse<String> response = this.client.send(request, HttpResponse.BodyHandlers.ofString());
 		 this.lastState = response.body();
 		 System.out.println(response.body());
+		 // successful contact
+		 this.handledConnectFail = false;
+		}catch(Exception e) {
+			this.connectError();
+		}
 	}
 	
 	
@@ -79,8 +96,10 @@ public class Client {
 	// and is also automatically called every 40ms in a seperate thread
 	// to mimic server push functionality to notify each player when the other completes turn
 	// if I had more time I would look into longpolling as it's a better solution 
+	// using asynchronous send requests
 	// as sending a string over TCP every 40ms to compare to detect changes is inferior to doing that server side and only sending changes
 	public String getState() throws IOException, InterruptedException {
+		try {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8000/"))
                 .setHeader("X-Forwarded-For", this.IP)
@@ -88,11 +107,20 @@ public class Client {
                 .build();
 
         HttpResponse<String> response = this.client.send(request,HttpResponse.BodyHandlers.ofString());
+		// successful contact
+        this.handledConnectFail = false;
         return response.body();
+		} catch(Exception e) {
+			this.connectError();
+			String dummyResponse = "";
+			return dummyResponse;
+		}
+
 	}
 	
 	// If user enters 1-9 then this POST request is sent to the server with the move as the body
 	public String makeMove(String col) throws IOException, InterruptedException {
+		try {
 		 HttpRequest request = HttpRequest.newBuilder()
 		          .uri(URI.create("http://localhost:8000/"))
 		          .setHeader("X-Forwarded-For", this.IP)
@@ -102,8 +130,17 @@ public class Client {
 		    HttpResponse<String> response = this.client.send(request, HttpResponse.BodyHandlers.ofString());
 		    this.lastState = response.body();
 		    System.out.println(response.body());
+			// successful contact
+		    this.handledConnectFail = false;
 		    return response.body();
+		}catch(Exception e) {
+			this.connectError();
+			String dummyResponse = "";
+			return dummyResponse;
 		}
+
+		
+	}
 	
 	// last state used to keep track of changes with the automatic GET requests
 	public void setLastState(String s) {
@@ -116,7 +153,8 @@ public class Client {
 
 	
 	// allows user to enter input
-	public void play() throws IOException, InterruptedException{		
+	public void play() throws IOException, InterruptedException, Exception{	
+		this.checkUpdates();
         while(true) { 
         	Scanner scanner = new Scanner(System.in);
         	String input = scanner.nextLine();
@@ -124,34 +162,47 @@ public class Client {
         }
 	}
 	
+	public void setHandledConnectFail() {
+		this.handledConnectFail = true;
+	}
 	
-	
-    public static void main(String[] args) throws IOException, InterruptedException {
-    	// updateRunnable should be its own method to follow proper SWE principals but I'm short on time 
-    	Client player = new Client();
-		player.setLastState(player.getState());
-		System.out.println(player.getLastState());
+	// check for updates every 40 milliseconds with GET request
+	// by comparing newest GET response with last GET request. If they are different then update
+	public void checkUpdates() throws Exception{
+		this.lastState = this.getState();
+		System.out.println(this.lastState);
 		// Separate thread to send GET requests every 40ms and print response if different from last
 		Runnable updateRunnable = new Runnable(){
 		    public void run() {
 		    	try {
-		    		String newState = player.getState();
-		        if(!newState.equals(player.getLastState())) {
-		        	System.out.println(newState);
-		        	player.setLastState(newState);
+		    		String newState = getState();
+		    		// getState returns empty string if there is an exception
+		    		if(newState.equals("")){
+		    			connectError();
+		    			return;
+		    		}
+		    		else if(!newState.equals(lastState)) {
+		        	    System.out.println(newState);
+		        	    lastState = newState;
 		        }
-		    }catch (Exception e) {
-		        System.out.println("Something went wrong.");
-		        return;
-		    }
+		    	handledConnectFail = false;	
+		        }catch (Exception e) {
+		            return;
+		        }
 		    }
 		};
 
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 		executor.scheduleAtFixedRate(updateRunnable, 0, 40, TimeUnit.MILLISECONDS);
+	}
+	
+	
+	
+	
+    public static void main(String[] args) throws IOException, InterruptedException, Exception {
+    	Client player = new Client();
     	player.play();
     }
 }
-
 
 
