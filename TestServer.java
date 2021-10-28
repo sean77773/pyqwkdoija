@@ -28,6 +28,17 @@ public class TestServer {
 	private static final String WAITING_MSG = "Waiting for second player..";
 	private int lastPlayer1Reqs;
 	private int lastPlayer2Reqs;
+	
+	// These two variables are involved in helping the losing player receive a response with the board state
+	// and winner declared after a winning move is made. Without it, the losing player doesn't get notified
+	// and gets a message with a blank board and who's turn it is (which should come after the winning notification)
+	// this issue occurs because when playerX makes a winning move, a response is sent back containing the board state and 
+	// the fact they won and then straight after the isWon variable is set back to false as a new game has started,
+	// meaning playerY's update GET requests never pass through the "if(isWon){winner message} part of the control flow
+	private String lastWonBoard;
+	private HashMap<String, Boolean> addrWinNotifyMap = new HashMap<String, Boolean>();
+	// true if game that just finished finished via a win, false otherwise (i.e. board became full and no winner)
+	private boolean finishedByWin;
 
 	
 
@@ -108,12 +119,12 @@ public class TestServer {
         	
         	// Handle all In-game requests (i.e. 2 players playing)
         	// If game is over, straight away use the below method to return appropriate responses
-        	if(game.getIsOver()) {
-        		response = ingameResponseGET(t);
-        	}
+        	//if(game.getIsOver()) {
+        		//response = ingameResponseGET(t);
+        	//}
         	// If client is not a player (i.e. 2 clients have entered their username),
         	// then no matter the request, send back this so that they are unable to play/view the game.
-        	else if(addrUsernameMap.size() == 2) {
+        	if(addrUsernameMap.size() == 2) {
         		if(!addrUsernameMap.containsKey(addr)) {
         		    response = "Game is full.";    
            // Client is a player, send appropriate response to GET and POST requests.
@@ -217,6 +228,12 @@ public class TestServer {
     public void removeFromAddrUsernameMap(String addr) {
     	this.addrUsernameMap.remove(addr);
     }
+    public void addToAddrWinNotifyMap(String IP, boolean val) {
+    	this.addrWinNotifyMap.put(IP, val);
+    }
+    public void removeToAddrWinNotifyMap(String IP, boolean val) {
+    	this.addrWinNotifyMap.remove(IP);
+    }
     
     public void close() {
     	this.server.stop(0);
@@ -262,8 +279,23 @@ public class TestServer {
     	StringBuilder response = new StringBuilder();
     	response.append(game.toString());
     	response.append(System.getProperty("line.separator"));
-        // First check if game is over and append appropriate response to board string
-    	if(game.getIsOver()) {
+        // First check if game has just finished and new one started, notify losing player of win
+    	// as otherwise they don't get notified and jump straight into a new game
+    	if(this.addrWinNotifyMap.get(addr) == true) {
+    		response = new StringBuilder();
+    		response.append(this.lastWonBoard);
+    		response.append(System.getProperty("line.separator"));
+    		if(this.finishedByWin == true) {
+    			response.append(this.movedLast + " has won the game.");	
+    		}else {
+    			response.append("Game is over. Nobody won.");
+    		}
+    		// Set back to default values 
+    		this.addrWinNotifyMap.put(addr, false);
+    		
+    	}
+    	// Check if game is over and append appropriate response to board string
+    	else if(game.getIsOver()) {
     		if(game.getIsWon()) {
     			response.append(this.movedLast + " has won the game.");
     		}else {
@@ -316,6 +348,7 @@ public class TestServer {
     	}
     	this.addrUsernameMap.put(addr, username);
     	this.addrPlayerMap.put(addr, player);
+    	this.addrWinNotifyMap.put(addr, false);
   
 
     	String playNum;
@@ -350,6 +383,24 @@ public class TestServer {
     	
     	// Start a new game if game is finished.
         if(this.game.getIsOver()) {
+          //needed to notify other player of the win
+          this.lastWonBoard = game.toString();
+          this.addrWinNotifyMap.put(addr, true);
+          // check if over by win or board full
+          // to give proper notification message to losing player
+          if(this.game.getIsWon() == false) {
+        	  this.finishedByWin = false;
+          }else {
+        	  this.finishedByWin = true;
+          }
+          // Get other player's address and change value for them in hashmap which stores addresses which need notified of win
+          // this is used in the controlflow of generating a GET response
+          for (String address : this.addrUsernameMap.keySet()) {
+        	    if(!address.equals(addr)) {
+        	    	this.addrWinNotifyMap.put(address, true);
+        	    }
+        	}
+          // create new game
       	  this.game = new Game();
       	  this.playerTurnMap.put("playerone", true);
       	  this.playerTurnMap.put("playertwo", false);
@@ -364,23 +415,19 @@ public class TestServer {
     // Number of requests increments each request. 
     // If a player disconnects the game immediately ends and the server goes back to being a pregame lobby
     // Other user can stay on server and wait for second player to connect then the game can start again
-    public void checkDC(String addr, int playerNum) {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        
-        final Runnable dcPing = new Runnable() {
+	public void checkDC(String addr, int playerNum){
+        Runnable dcPing = new Runnable() {
             public void run() { 
-            	// Get current amount of requests
-            	// If it equals value of 3 seconds ago, player is considered DCed and their 
-            	// data removed from the server to allow another player to join
             	int reqCurVal = addrNumReqsMap.get(addr); 
             	if(playerNum == 1) {
             		if(reqCurVal == lastPlayer1Reqs) {
             		    addrUsernameMap.remove(addr);
             			addrPlayerMap.remove(addr);
+            			addrNumReqsMap.remove(addr);
+            			addrWinNotifyMap.remove(addr);
             			game = new Game();
             			playerTurnMap.put("playerone", true);
             			playerTurnMap.put("playertwo", false);
-            			addrNumReqsMap.remove(addr);
             			lastPlayer1Reqs = 1;
             		}else {
             			lastPlayer1Reqs = reqCurVal;
@@ -389,10 +436,11 @@ public class TestServer {
             		if(reqCurVal == lastPlayer2Reqs) {
             		    addrUsernameMap.remove(addr);
             			addrPlayerMap.remove(addr);
+            			addrNumReqsMap.remove(addr);
+            			addrWinNotifyMap.remove(addr);
             			game = new Game();
             			playerTurnMap.put("playerone", true);
             			playerTurnMap.put("playertwo", false);
-            			addrNumReqsMap.remove(addr);
             			lastPlayer2Reqs = 1;
             		}else {
             			lastPlayer2Reqs = reqCurVal;
@@ -400,12 +448,10 @@ public class TestServer {
             	}
             }
           };
-          final ScheduledFuture<?> dcHandle =
-            scheduler.scheduleAtFixedRate(dcPing, 0, 3, TimeUnit.SECONDS);
-          scheduler.schedule(new Runnable() {
-            public void run() { dcHandle.cancel(true); }
-          }, 60 * 60, TimeUnit.SECONDS);
-    }
+
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+		executor.scheduleAtFixedRate(dcPing, 0, 100, TimeUnit.MILLISECONDS);
+	}
     
     // Create server object
     public static void main(String[] args) throws Exception {
