@@ -216,7 +216,7 @@ public class Game {
 		return this.checkHorizontal(row) || this.checkVertical(col) || this.checkDiagonal(row, col);
 	}
 	
-	// checks if board is full
+	// checks if board is full by seeing if top row is full
 	public boolean checkBoardFull() {
 		for(int i = 0; i < NUM_COLS; i++) {
 			if(this.board[0][i] == ' ') {
