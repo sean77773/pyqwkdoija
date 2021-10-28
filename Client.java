@@ -17,8 +17,8 @@ public class Client {
     private HttpClient client = HttpClient.newHttpClient();
     private String IP;
     // This is a variable which keeps track of the last changed state
-    // the client automatically sends GET requests to server every 40 seconds
-    // and if any change is 
+    // the client automatically sends GET requests to server every 40 milliseconds
+    // and if any change is made then it is printed to the user
     private String lastState;
    
     public Client () {
