@@ -42,7 +42,6 @@ Overview:
 
 - Game() initialised in application server
 
-- This Game only really works when using the special Client program, server does not have much error handling for non-standard input (i.e. input not allowed by client)
 
 Thought Process:
 
