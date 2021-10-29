@@ -1,3 +1,12 @@
+**Changes from last version**
+
+- Server can handle player disconnects at any stage of game and make room for other clients to join
+- Proper error handling for client/server communication 
+- Client will receive a "Failed to connect to server" message if server is not live when client program launched, will automatically send GET request as soon as it goes live
+- Fixed issue where by losing player would not get notified that the other player has won
+- Cleaned up code
+
+
 - Compile Game.java.
 - Compile and run AppServer.java.
 - Compile and run Client.java (per player) and follow onscreen instructions
