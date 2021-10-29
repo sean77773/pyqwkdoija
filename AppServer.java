@@ -118,7 +118,7 @@ public class AppServer {
     			}else{
     				String requestBody = getRequestBody(t);
     				// If user has not already entered their username then call handleUsername
-    				if(requestBody.length() > 2 && requestBody.length() <= 10 && !addrUsernameMap.containsKey(addr)) {
+    				if(requestBody.length() >= 2 && requestBody.length() <= 10 && !addrUsernameMap.containsKey(addr)) {
     					response = handleUsername(addr, requestBody);
     				// In any other case, send them the appropriate response using pregameResponseGET
     				}else {
