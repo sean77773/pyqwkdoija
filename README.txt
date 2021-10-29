@@ -77,11 +77,10 @@ Bugs/Issues:
 
 Some issues that I'm sure could be fixed relatively easily but unfortunately I don't have enough time.
 
-- Application Server cannot handle pregame disconnects (i.e. first player joins by entering username and disconnects before second player joins by entering username)
-- When game is won only the winner sees the "usernameX has won." response. This is an issue caused by having the game restart
-  immediately after it is won. To revert to the game ending (and requiring server to restart and clients to rejoin) when someone wins - comment out lines 261 - 264 of the code.
-- Overall its not very robust to handle non Client object requests, with more time proper error handling could be put in place.
+- Sometimes it can't handle disconnects as there is a HashMap mapping userIP -> numberOfRequests, with the value incrementing each request and very rarely it doesn't populate the dictionary
+  with a user when they initially join (line 233, in handleUsername() method). I've changed the execution rate of the checkDisconnect() method and it seems to have had an effect on it as I can't reproduce the bug since
 - Not particularly secure, could be improved upon using things like https and authorisation headers
+
 
 Testing:
 
