@@ -70,11 +70,11 @@ The issue with the constant requests is that the server is sending back a respon
 of the board) and the checking for change is done client-side. This is quite inefficient sending over a reponse every 40ms. 
 With longpolling the change is detected server-side so there is no unneccessary requests/responses sent.
 
-I decided to use this constant request sending to handle disconnects as well. Every three seconds ,the application server checks
+I decided to use this constant request sending to handle disconnects as well. Every 100ms ,the application server checks
 if the total number of requests from each player has changed since the last check. If it hasn't, the user is considered disconnected
 and the game ends as the number should have increased due to the automatic requests. Another player is free to join and the game will start again.
 
-For player identification I decided to use spoofed IP addresses. The client generates a random IP and sends it in the x-forwarded-for header.
+For player identification I decided to use fake, randomly generated IP addresses. The client generates a random IP and sends it in the x-forwarded-for header.
 I originally used the HttpRequest.getRemoteAddress() method but the IP returned would change based on the method the client input invoked due to
 (I think) built in proxies. I realise now that there is better ways for client identification, namely cookies and that IP would not be suitable for a 
 proper web deployment due to spoofing and dynamic addresses.
