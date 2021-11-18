@@ -129,9 +129,7 @@ Please play around with it (try break it) and see how it handles the following c
 - fill up lobby with 2 players and launch other clients and then have client programs which are playing shut down
 
 
-Looking forward to getting feedback on this! 
 
-Sean
 
 
 
